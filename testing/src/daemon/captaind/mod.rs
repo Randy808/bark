@@ -334,6 +334,7 @@ impl DaemonHelper for CaptaindHelper {
 			first_run = true;
 		}
 
+		//write config
 		let config_path = data_dir.join(CAPTAIND_CONFIG_FILE);
 		info!("Preparing to create configuration file at: {}", config_path.display());
 		let mut config_file = fs::File::create(&config_path).unwrap();

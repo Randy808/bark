@@ -30,7 +30,7 @@ use crate::{Vtxo, VtxoId, VtxoState, WalletProperties};
 use crate::exit::models::ExitTxOrigin;
 use crate::movement::{Movement, MovementId, MovementStatus, MovementSubsystem};
 use crate::persist::{BarkPersister, RoundStateId, StoredRoundState};
-use crate::persist::models::{LightningReceive, LightningSend, PendingBoard, StoredExit};
+use crate::persist::models::{LightningReceive, LightningSend, LiquidSend, PendingBoard, StoredExit};
 use crate::round::{RoundState, UnconfirmedRound};
 use crate::vtxo::state::{VtxoStateKind, WalletVtxo};
 
@@ -314,6 +314,40 @@ impl BarkPersister for SqliteClient {
 	fn get_lightning_send(&self, payment_hash: PaymentHash) -> anyhow::Result<Option<LightningSend>> {
 		let conn = self.connect()?;
 		query::get_lightning_send(&conn, payment_hash)
+	}
+
+	// Liquid send methods
+
+	fn store_new_pending_liquid_send(
+		&self,
+		liquid_address: &str,
+		payment_hash: PaymentHash,
+		amount: &Amount,
+		vtxos: &[VtxoId],
+		movement_id: MovementId,
+	) -> anyhow::Result<LiquidSend> {
+		let conn = self.connect()?;
+		query::store_new_pending_liquid_send(&conn, liquid_address, payment_hash, amount, vtxos, movement_id)
+	}
+
+	fn get_all_pending_liquid_send(&self) -> anyhow::Result<Vec<LiquidSend>> {
+		let conn = self.connect()?;
+		query::get_all_pending_liquid_send(&conn)
+	}
+
+	fn finish_liquid_send(&self, payment_hash: PaymentHash) -> anyhow::Result<()> {
+		let conn = self.connect()?;
+		query::finish_liquid_send(&conn, payment_hash)
+	}
+
+	fn remove_liquid_send(&self, payment_hash: PaymentHash) -> anyhow::Result<()> {
+		let conn = self.connect()?;
+		query::remove_liquid_send(&conn, payment_hash)
+	}
+
+	fn get_liquid_send(&self, payment_hash: PaymentHash) -> anyhow::Result<Option<LiquidSend>> {
+		let conn = self.connect()?;
+		query::get_liquid_send(&conn, payment_hash)
 	}
 
 	fn get_all_pending_lightning_receives(&self) -> anyhow::Result<Vec<LightningReceive>> {

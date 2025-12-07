@@ -37,7 +37,7 @@ use bitcoin_ext::BlockDelta;
 use crate::WalletProperties;
 use crate::exit::models::ExitTxOrigin;
 use crate::movement::{Movement, MovementId, MovementStatus, MovementSubsystem};
-use crate::persist::models::{LightningReceive, LightningSend, PendingBoard, StoredExit};
+use crate::persist::models::{LightningReceive, LightningSend, LiquidSend, PendingBoard, StoredExit};
 use crate::round::{RoundState, UnconfirmedRound};
 use crate::vtxo::state::{VtxoState, VtxoStateKind, WalletVtxo};
 
@@ -444,6 +444,64 @@ pub trait BarkPersister: Send + Sync + 'static {
 	/// Errors:
 	/// - Returns an error if the lookup fails.
 	fn get_lightning_send(&self, payment_hash: PaymentHash) -> anyhow::Result<Option<LightningSend>>;
+
+	// Liquid payment methods
+
+	/// Store a new pending liquid send.
+	///
+	/// Parameters:
+	/// - liquid_address: The liquid address to send to.
+	/// - payment_hash: The [PaymentHash] for tracking this payment.
+	/// - amount: The amount being sent.
+	/// - vtxos: The vtxos of the pending liquid send.
+	/// - movement_id: The associated movement ID.
+	///
+	/// Errors:
+	/// - Returns an error if the pending liquid send cannot be stored.
+	fn store_new_pending_liquid_send(
+		&self,
+		liquid_address: &str,
+		payment_hash: PaymentHash,
+		amount: &Amount,
+		vtxos: &[VtxoId],
+		movement_id: MovementId,
+	) -> anyhow::Result<LiquidSend>;
+
+	/// Get all pending liquid sends.
+	///
+	/// Returns:
+	/// - `Ok(Vec<LiquidSend>)` possibly empty.
+	///
+	/// Errors:
+	/// - Returns an error if the query fails.
+	fn get_all_pending_liquid_send(&self) -> anyhow::Result<Vec<LiquidSend>>;
+
+	/// Mark a liquid send as confirmed.
+	///
+	/// Parameters:
+	/// - payment_hash: The [PaymentHash] of the liquid send to update.
+	///
+	/// Errors:
+	/// - Returns an error if the liquid send cannot be updated.
+	fn finish_liquid_send(&self, payment_hash: PaymentHash) -> anyhow::Result<()>;
+
+	/// Remove a liquid send.
+	///
+	/// Parameters:
+	/// - payment_hash: The [PaymentHash] of the liquid send to remove.
+	///
+	/// Errors:
+	/// - Returns an error if the liquid send cannot be removed.
+	fn remove_liquid_send(&self, payment_hash: PaymentHash) -> anyhow::Result<()>;
+
+	/// Get a liquid send by payment hash.
+	///
+	/// Parameters:
+	/// - payment_hash: The [PaymentHash] of the liquid send to get.
+	///
+	/// Errors:
+	/// - Returns an error if the lookup fails.
+	fn get_liquid_send(&self, payment_hash: PaymentHash) -> anyhow::Result<Option<LiquidSend>>;
 
 	/// Store an incoming Lightning receive record.
 	///

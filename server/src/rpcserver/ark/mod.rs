@@ -353,6 +353,125 @@ impl rpc::server::ArkService for Server {
 		Ok(tonic::Response::new(res))
 	}
 
+	// * LIQUID PAYMENT HANDLERS
+
+	async fn request_liquid_pay_htlc_cosign(
+		&self,
+		req: tonic::Request<protos::LiquidPayHtlcCosignRequest>,
+	) -> Result<tonic::Response<protos::LiquidPayHtlcCosignResponse>, tonic::Status> {
+		let _ = RpcMethodDetails::grpc_ark(middleware::RPC_SERVICE_ARK_REQUEST_LIQUID_PAY_HTLC_COSIGN);
+		let req = req.into_inner();
+
+		crate::rpcserver::add_tracing_attributes(
+			vec![
+				KeyValue::new("liquid_address", req.liquid_address.clone()),
+				// KeyValue::new("amount_sats", req.amount_sat),
+				KeyValue::new("input_vtxo_ids", format!("{:?}", req.input_vtxo_ids)),
+			]);
+
+		let input_ids = req.input_vtxo_ids.iter()
+			.map(VtxoId::from_bytes)
+			.collect::<Result<Vec<_>, _>>()?;
+
+		let user_nonces = req.user_nonces.iter()
+			.map(musig::PublicNonce::from_bytes)
+			.collect::<Result<Vec<_>, _>>()?;
+
+		let user_pubkey = PublicKey::from_slice(&req.user_pubkey)
+			.badarg("invalid user pubkey")?;
+
+		let amount = Amount::from_sat(req.amount_sat);
+
+		// Create payment hash from liquid address
+		let payment_hash = PaymentHash::from(
+			bitcoin::hashes::sha256::Hash::hash(req.liquid_address.as_bytes())
+		);
+
+		let (sigs, policy) = self.cosign_liquid_pay_htlc(
+			input_ids,
+			user_nonces,
+			user_pubkey,
+			amount,
+			payment_hash,
+		).await.to_status()?;
+
+		Ok(tonic::Response::new(protos::LiquidPayHtlcCosignResponse {
+			sigs: sigs.into_iter().map(Into::into).collect(),
+			policy: policy.serialize(),
+		}))
+	}
+
+	async fn initiate_liquid_payment(
+		&self,
+		req: tonic::Request<protos::InitiateLiquidPaymentRequest>,
+	) -> Result<tonic::Response<protos::LiquidPaymentResult>, tonic::Status> {
+		let _ = RpcMethodDetails::grpc_ark(middleware::RPC_SERVICE_ARK_INITIATE_LIQUID_PAYMENT);
+		let req = req.into_inner();
+
+		// crate::rpcserver::add_tracing_attributes(vec![
+		// 	KeyValue::new("liquid_address", req.liquid_address.clone()),
+		// 	KeyValue::new("amount_sat", req.amount_sat),
+		// 	KeyValue::new("payment_hash", req.payment_hash.as_hex().to_string()),
+		// ]);
+
+		let payment_hash = PaymentHash::from_bytes(req.payment_hash)?;
+		let htlc_vtxo_ids = req.htlc_vtxo_ids.iter()
+			.map(VtxoId::from_bytes)
+			.collect::<Result<Vec<_>, _>>()?;
+
+		let amount = Amount::from_sat(req.amount_sat);
+
+		let res = self.initiate_liquid_payment(
+			req.liquid_address,
+			amount,
+			payment_hash,
+			htlc_vtxo_ids,
+			req.wait,
+		).await.to_status()?;
+
+		Ok(tonic::Response::new(res))
+	}
+
+	async fn check_liquid_payment(
+		&self,
+		req: tonic::Request<protos::CheckLiquidPaymentRequest>,
+	) -> Result<tonic::Response<protos::LiquidPaymentResult>, tonic::Status> {
+		let _ = RpcMethodDetails::grpc_ark(middleware::RPC_SERVICE_ARK_CHECK_LIQUID_PAYMENT);
+		let req = req.into_inner();
+
+		crate::rpcserver::add_tracing_attributes(vec![
+			KeyValue::new("payment_hash", req.hash.as_hex().to_string()),
+		]);
+
+		let payment_hash = PaymentHash::from_bytes(req.hash)?;
+		let res = self.check_liquid_payment(payment_hash, req.wait).await.to_status()?;
+		Ok(tonic::Response::new(res))
+	}
+
+	async fn request_liquid_pay_htlc_revocation(
+		&self,
+		req: tonic::Request<protos::RevokeLiquidPayHtlcRequest>
+	) -> Result<tonic::Response<protos::ArkoorPackageCosignResponse>, tonic::Status> {
+		let _ = RpcMethodDetails::grpc_ark(middleware::RPC_SERVICE_ARK_REQUEST_LIQUID_PAY_HTLC_REVOCATION);
+		let req = req.into_inner();
+
+		crate::rpcserver::add_tracing_attributes(vec![
+			KeyValue::new("htlc_vtxo_ids", format!("{:?}", req.htlc_vtxo_ids)),
+			KeyValue::new("user_nonces", format!("{:?}", req.user_nonces)),
+		]);
+
+		let htlc_vtxo_ids = req.htlc_vtxo_ids.iter()
+			.map(VtxoId::from_bytes)
+			.collect::<Result<Vec<_>, _>>()?;
+
+		let user_nonces = req.user_nonces.iter()
+			.map(musig::PublicNonce::from_bytes)
+			.collect::<Result<Vec<_>, _>>()?;
+
+		let cosign_resp = self.revoke_bolt11_payment(htlc_vtxo_ids, user_nonces).await.to_status()?;
+		Ok(tonic::Response::new(cosign_resp.into()))
+	}
+
 	// TODO: Remove this once we hit 0.1.0-beta.6 or higher
 	async fn revoke_lightning_payment(
 		&self,

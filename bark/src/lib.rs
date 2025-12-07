@@ -291,6 +291,7 @@ pub extern crate lnurl as lnurllib;
 pub mod daemon;
 pub mod exit;
 pub mod lightning;
+pub mod liquid;
 pub mod movement;
 pub mod onchain;
 pub mod persist;
@@ -898,6 +899,7 @@ impl Wallet {
 				BarkSubsystem::Board,
 				BarkSubsystem::LightningReceive,
 				BarkSubsystem::LightningSend,
+				BarkSubsystem::LiquidSend,
 				BarkSubsystem::Round,
 			];
 			for subsystem in subsystems {

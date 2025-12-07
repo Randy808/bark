@@ -160,6 +160,7 @@ impl<'a, T: Borrow<VtxoRequest> + Clone> ArkoorBuilder<'a, T> {
 	/// Construct the transaction outputs of the resulting arkoor tx.
 	pub fn txouts(&self) -> Vec<TxOut> {
 		self.outputs.iter().map(|out| {
+			//RANDY
 			out.borrow().policy.txout(
 				out.borrow().amount,
 				self.input.server_pubkey(),

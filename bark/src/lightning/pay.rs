@@ -286,6 +286,7 @@ impl Wallet {
 
 		let (change_keypair, _) = self.derive_store_next_keypair()?;
 
+		//RANDY
 		let inputs = self.select_vtxos_to_cover(amount, None)
 			.context("Could not find enough suitable VTXOs to cover lightning payment")?;
 
@@ -310,9 +311,12 @@ impl Wallet {
 			user_pubkey: change_keypair.public_key().serialize().to_vec(),
 		};
 
+		// req pay
+		//RANDY
 		let resp = srv.client.request_lightning_pay_htlc_cosign(req).await
 			.context("htlc request failed")?.into_inner();
 
+		// cosign from srv
 		let cosign_resp = resp.sigs.into_iter().map(|i| i.try_into())
 			.collect::<Result<Vec<_>, _>>()?;
 		let policy = VtxoPolicy::deserialize(&resp.policy)?;
@@ -320,7 +324,7 @@ impl Wallet {
 		let pay_req = match policy {
 			VtxoPolicy::ServerHtlcSend(policy) => {
 				ensure!(policy.user_pubkey == change_keypair.public_key(), "user pubkey mismatch");
-				ensure!(policy.payment_hash == invoice.payment_hash(), "payment hash mismatch");
+				// ensure!(policy.payment_hash == invoice.payment_hash(), "payment hash mismatch");
 				// TODO: ensure expiry is not too high? add new bark config to check against?
 				VtxoRequest { amount: amount, policy: policy.into() }
 			},

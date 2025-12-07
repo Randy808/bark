@@ -77,6 +77,7 @@ opentelemetry-semantic-conventions.workspace = true
 tracing-opentelemetry.workspace = true
 tracing-subscriber.workspace = true
 tracing.workspace = true
+elements-rpc = "0.1.0"
 
 [dev-dependencies]
 ark-lib = { path = "../lib", features = [ "test-util" ] }

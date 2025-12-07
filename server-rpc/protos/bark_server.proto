@@ -36,6 +36,13 @@ service ArkService {
 	rpc CheckLightningPayment(CheckLightningPaymentRequest) returns (LightningPaymentResult) {}
 	rpc RequestLightningPayHtlcRevocation(RevokeLightningPayHtlcRequest) returns (ArkoorPackageCosignResponse) {}
 
+	// * SEND LIQUID payments
+
+	rpc RequestLiquidPayHtlcCosign(LiquidPayHtlcCosignRequest) returns (LiquidPayHtlcCosignResponse) {}
+	rpc InitiateLiquidPayment(InitiateLiquidPaymentRequest) returns (LiquidPaymentResult) {}
+	rpc CheckLiquidPayment(CheckLiquidPaymentRequest) returns (LiquidPaymentResult) {}
+	rpc RequestLiquidPayHtlcRevocation(RevokeLiquidPayHtlcRequest) returns (ArkoorPackageCosignResponse) {}
+
 	// TODO: Remove this once we hit 0.1.0-beta.6 or higher
 	rpc StartLightningPayment(LightningPayHtlcCosignRequest) returns (LightningPayHtlcCosignResponse) {
 		option deprecated = true;
@@ -291,6 +298,45 @@ message CheckLightningReceiveResponse {
 	LightningReceiveStatus status = 3;
 	// Empty until the status is HTLCS_READY or SETTLED
 	repeated bytes htlc_vtxos = 4;
+}
+
+// liquid payments
+
+message LiquidPayHtlcCosignRequest {
+	string liquid_address = 1;
+	uint64 amount_sat = 2;
+	repeated bytes input_vtxo_ids = 3;
+	repeated bytes user_nonces = 4;
+	bytes user_pubkey = 5;
+}
+
+message LiquidPayHtlcCosignResponse {
+	repeated ArkoorCosignResponse sigs = 1;
+	bytes policy = 2;
+}
+
+message InitiateLiquidPaymentRequest {
+	string liquid_address = 1;
+	uint64 amount_sat = 2;
+	bytes payment_hash = 3;
+	repeated bytes htlc_vtxo_ids = 4;
+	bool wait = 5;
+}
+
+message CheckLiquidPaymentRequest {
+	bytes hash = 1;
+	bool wait = 2;
+}
+
+message LiquidPaymentResult {
+	string progress_message = 1;
+	PaymentStatus status = 2;
+	bytes payment_hash = 3;
+}
+
+message RevokeLiquidPayHtlcRequest {
+	repeated bytes htlc_vtxo_ids = 1;
+	repeated bytes user_nonces = 2;
 }
 
 // round

@@ -51,6 +51,7 @@ pub(crate) enum BarkSubsystem {
 	Exit,
 	LightningReceive,
 	LightningSend,
+	LiquidSend,
 	Round,
 }
 
@@ -62,6 +63,7 @@ impl BarkSubsystem {
 			BarkSubsystem::Exit => "bark.exit",
 			BarkSubsystem::LightningReceive => "bark.lightning_receive",
 			BarkSubsystem::LightningSend => "bark.lightning_send",
+			BarkSubsystem::LiquidSend => "bark.liquid_send",
 			BarkSubsystem::Round => "bark.round",
 		}
 	}
@@ -154,6 +156,19 @@ impl fmt::Display for LightningSendMovement {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		match self {
 			LightningSendMovement::Send => f.write_str("send"),
+		}
+	}
+}
+
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
+pub(crate) enum LiquidSendMovement {
+	Send,
+}
+
+impl fmt::Display for LiquidSendMovement {
+	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+		match self {
+			LiquidSendMovement::Send => f.write_str("send"),
 		}
 	}
 }

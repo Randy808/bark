@@ -158,6 +158,65 @@ impl Bitcoind {
 	}
 }
 
+/// Configuration for connecting to an Elements/Liquid daemon via RPC
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct Elementsd {
+	/// the URL of the elementsd RPC (mandatory)
+	pub url: String,
+	/// the path of the cookie file for the elementsd RPC
+	/// It is mandatory to configure exactly one authentication method
+	/// This could either be [elementsd.cookie] or [elementsd.rpc_user] and [elementsd.rpc_pass]
+	pub cookie: Option<PathBuf>,
+	/// the user for the elementsd RPC
+	/// It is mandatory to configure exactly one authentication method
+	/// If a [elementsd.rpc_pass] is provided [elementsd.rpc_user] must be provided
+	pub rpc_user: Option<String>,
+	/// the password for the elementsd RPC
+	/// It is mandatory to configure exactly one authentication method
+	/// If a [elementsd.rpc_user] is provided [elementsd.rpc_pass] must be provided
+	pub rpc_pass: Option<Secret<String>>,
+}
+
+impl Elementsd {
+	/// Validate the elementsd config, mostly checking auth
+	pub fn validate(&self) -> anyhow::Result<()> {
+		let with_user_pass = match (&self.rpc_user, &self.rpc_pass) {
+			(Some(_), None) => bail!("Missing configuration elementsd.rpc_pass. \
+				This is required if elementsd.rpc_user is provided"),
+			(None, Some(_)) => bail!("Missing configuration elementsd.rpc_user. \
+				This is required if elementsd.rpc_pass is provided"),
+			(None, None) => false,
+			(Some(_),Some(_)) => true,
+		};
+
+		if !with_user_pass && self.cookie.is_none() {
+			bail!("Configuring authentication to elementsd is mandatory. \
+				Specify either elementsd.cookie or (elementsd.rpc_user and elementsd.rpc_pass).")
+		} else if with_user_pass && self.cookie.is_some() {
+			bail!("Invalid configuration for authentication to elementsd. Use either \
+				elementsd.cookie or (elementsd.rpc_user and elementsd.rpc_pass) but not both.")
+		}
+
+		Ok(())
+	}
+
+	pub fn auth(&self) -> bitcoin_ext::rpc::Auth {
+		match (&self.rpc_user, &self.rpc_pass) {
+			(Some(user), Some(pass)) => bitcoin_ext::rpc::Auth::UserPass(
+				user.into(), pass.leak_ref().into(),
+			),
+			(Some(_), None) => panic!("Missing configuration for elementsd.rpc_pass."),
+			(None, Some(_)) => panic!("Missing configuration for elementsd.rpc_user."),
+			(None, None) => {
+				let elementsd_cookie_file = self.cookie.as_ref()
+					.expect("The elementsd.cookie must be set if username and password aren't provided");
+
+				bitcoin_ext::rpc::Auth::CookieFile(elementsd_cookie_file.into())
+			}
+		}
+	}
+}
+
 #[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct Rpc {
@@ -322,6 +381,9 @@ pub struct Config {
 
 	pub bitcoind: Bitcoind,
 
+	/// Optional Elements/Liquid daemon configuration for liquid payments
+	pub elementsd: Option<Elementsd>,
+
 	#[serde(default)]
 	pub cln_array: Vec<Lightningd>,
 	#[serde(with = "serde_util::duration")]
@@ -433,6 +495,9 @@ impl Config {
 	/// It also checks if all required configurations are available
 	pub fn validate(&self) -> anyhow::Result<()> {
 		self.bitcoind.validate()?;
+		if let Some(ref elementsd) = self.elementsd {
+			elementsd.validate()?;
+		}
 		Ok(())
 	}
 

@@ -23,6 +23,7 @@ pub(crate) mod system;
 
 mod intman;
 mod ln;
+mod liquid;
 mod psbtext;
 mod round;
 mod serde_util;
@@ -152,6 +153,7 @@ pub struct Server {
 	// NB this needs to be an Arc so we can take a static guard
 	rounds_wallet: Arc<tokio::sync::Mutex<PersistedWallet>>,
 	bitcoind: BitcoinRpcClient,
+	elementsd: Option<BitcoinRpcClient>,
 	tip_fetcher: TipFetcher,
 	rtmgr: RuntimeManager,
 	tx_nursery: TxNursery,
@@ -163,6 +165,7 @@ pub struct Server {
 	vtxos_in_flux: VtxosInFlux,
 	cln: ClnManager,
 	vtxopool: VtxoPool,
+	liquid_payments: Arc<parking_lot::Mutex<std::collections::HashMap<ark::lightning::PaymentHash, liquid::LiquidPayment>>>,
 }
 
 impl Server {
@@ -276,6 +279,17 @@ impl Server {
 				chain_info.chain, cfg.network,
 			);
 		}
+
+		// Initialize elementsd if configured
+		let elementsd = if let Some(ref elementsd_cfg) = cfg.elementsd {
+			let client = BitcoinRpcClient::new(&elementsd_cfg.url, elementsd_cfg.auth())
+				.context("failed to create elementsd rpc client")?;
+			info!("Connected to Elements daemon at {}", elementsd_cfg.url);
+			Some(client)
+		} else {
+			info!("No Elements daemon configured, liquid payments will not be available");
+			None
+		};
 
 		let seed = wallet::read_mnemonic_from_datadir(&cfg.data_dir)?.to_seed("");
 		let master_xpriv = bip32::Xpriv::new_master(cfg.network, &seed).unwrap();
@@ -401,6 +415,7 @@ impl Server {
 			server_key: Secret::new(server_key),
 			ephemeral_master_key: Secret::new(ephemeral_master_key),
 			bitcoind,
+			elementsd,
 			tip_fetcher,
 			rtmgr,
 			tx_nursery: tx_nursery.clone(),
@@ -409,6 +424,7 @@ impl Server {
 			forfeits: forfeits,
 			cln,
 			vtxopool,
+			liquid_payments: Arc::new(parking_lot::Mutex::new(std::collections::HashMap::new())),
 		};
 
 		let srv = Arc::new(srv);

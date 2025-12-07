@@ -20,7 +20,7 @@ use crate::exit::models::{ExitState, ExitTxOrigin};
 use crate::movement::{Movement, MovementId, MovementStatus, MovementSubsystem};
 use crate::persist::{RoundStateId, StoredRoundState};
 use crate::persist::models::{
-	LightningReceive, LightningSend, PendingBoard, SerdeRoundState, SerdeUnconfirmedRound, StoredExit
+	LightningReceive, LightningSend, LiquidSend, PendingBoard, SerdeRoundState, SerdeUnconfirmedRound, StoredExit
 };
 use crate::persist::sqlite::convert::{row_to_movement, row_to_wallet_vtxo, rows_to_wallet_vtxos};
 use crate::round::{RoundState, UnconfirmedRound};
@@ -689,6 +689,149 @@ pub fn get_last_vtxo_key_index(conn: &Connection) -> anyhow::Result<Option<u32>>
 
 	if let Some(row) = rows.next()? {
 		Ok(Some(u32::try_from(row.get::<usize, i64>(0)?)?))
+	} else {
+		Ok(None)
+	}
+}
+
+// Liquid send functions
+
+pub fn get_all_pending_liquid_send(conn: &Connection) -> anyhow::Result<Vec<LiquidSend>> {
+	let query = "
+		SELECT htlc_vtxo_ids, liquid_address, payment_hash, amount_sats, movement_id, confirmed
+		FROM bark_liquid_send
+		WHERE confirmed = 0";
+
+	let mut statement = conn.prepare(query)?;
+	let mut rows = statement.query(())?;
+
+	let mut pending_liquid_sends = Vec::new();
+	while let Some(row) = rows.next()? {
+		let liquid_address = row.get::<_, String>("liquid_address")?;
+		let payment_hash = PaymentHash::from_str(&row.get::<_, String>("payment_hash")?)?;
+		let htlc_vtxo_ids = serde_json::from_str::<Vec<VtxoId>>(&row.get::<_, String>("htlc_vtxo_ids")?)?;
+		let amount_sats = row.get::<_, i64>("amount_sats")?;
+		let movement_id = MovementId::new(row.get::<_, u32>("movement_id")?);
+		let confirmed = row.get::<_, bool>("confirmed")?;
+
+		let mut htlc_vtxos = Vec::new();
+		for htlc_vtxo_id in htlc_vtxo_ids {
+			htlc_vtxos.push(get_wallet_vtxo_by_id(conn, htlc_vtxo_id)?.context("no vtxo found")?);
+		}
+
+		pending_liquid_sends.push(LiquidSend {
+			liquid_address,
+			payment_hash,
+			amount: Amount::from_sat(amount_sats as u64),
+			htlc_vtxos,
+			movement_id,
+			confirmed,
+		});
+	}
+
+	Ok(pending_liquid_sends)
+}
+
+pub fn store_new_pending_liquid_send<V: VtxoRef>(
+	conn: &Connection,
+	liquid_address: &str,
+	payment_hash: PaymentHash,
+	amount: &Amount,
+	htlc_vtxo_ids: &[V],
+	movement_id: MovementId,
+) -> anyhow::Result<LiquidSend> {
+	let query = "
+		INSERT INTO bark_liquid_send (liquid_address, payment_hash, amount_sats, htlc_vtxo_ids, movement_id, confirmed)
+		VALUES (:liquid_address, :payment_hash, :amount_sats, :htlc_vtxo_ids, :movement_id, 0)
+	";
+
+	let mut statement = conn.prepare(query)?;
+
+	let mut htlc_vtxos = Vec::new();
+	let mut vtxo_ids = Vec::new();
+	for v in htlc_vtxo_ids {
+		htlc_vtxos.push(get_wallet_vtxo_by_id(conn, v.vtxo_id())?.context("no vtxo found")?);
+		vtxo_ids.push(v.vtxo_id().to_string());
+	}
+
+	statement.execute(named_params! {
+		":liquid_address": liquid_address,
+		":payment_hash": payment_hash.as_hex().to_string(),
+		":amount_sats": amount.to_sat(),
+		":htlc_vtxo_ids": serde_json::to_string(&vtxo_ids)?,
+		":movement_id": movement_id.0,
+	})?;
+
+	Ok(LiquidSend {
+		liquid_address: liquid_address.to_string(),
+		payment_hash,
+		amount: *amount,
+		confirmed: false,
+		htlc_vtxos,
+		movement_id,
+	})
+}
+
+pub fn finish_liquid_send(
+	conn: &Connection,
+	payment_hash: PaymentHash,
+) -> anyhow::Result<()> {
+	let query = "
+		UPDATE bark_liquid_send
+		SET confirmed = 1, finished_at = :finished_at
+		WHERE payment_hash = :payment_hash";
+
+	let mut statement = conn.prepare(query)?;
+
+	statement.execute(named_params! {
+		":payment_hash": payment_hash.as_hex().to_string(),
+		":finished_at": chrono::Local::now(),
+	})?;
+
+	Ok(())
+}
+
+pub fn remove_liquid_send(
+	conn: &Connection,
+	payment_hash: PaymentHash,
+) -> anyhow::Result<()> {
+	let query = "DELETE FROM bark_liquid_send WHERE payment_hash = ?1";
+	let mut statement = conn.prepare(query)?;
+	statement.execute([payment_hash.as_hex().to_string()])?;
+	Ok(())
+}
+
+pub fn get_liquid_send(
+	conn: &Connection,
+	payment_hash: PaymentHash,
+) -> anyhow::Result<Option<LiquidSend>> {
+	let query = "
+		SELECT htlc_vtxo_ids, liquid_address, amount_sats, movement_id, confirmed
+		FROM bark_liquid_send
+		WHERE payment_hash = ?1";
+	let mut statement = conn.prepare(query)?;
+	let mut rows = statement.query([payment_hash.as_hex().to_string()])?;
+
+	if let Some(row) = rows.next()? {
+		let liquid_address = row.get::<_, String>("liquid_address")?;
+		let htlc_vtxo_ids = serde_json::from_str::<Vec<VtxoId>>(&row.get::<_, String>("htlc_vtxo_ids")?)?;
+		let amount_sats = row.get::<_, i64>("amount_sats")?;
+		let movement_id = MovementId::new(row.get::<_, u32>("movement_id")?);
+		let confirmed = row.get::<_, bool>("confirmed")?;
+
+		let mut htlc_vtxos = Vec::new();
+		for htlc_vtxo_id in htlc_vtxo_ids {
+			htlc_vtxos.push(get_wallet_vtxo_by_id(conn, htlc_vtxo_id)?.context("no vtxo found")?);
+		}
+
+		Ok(Some(LiquidSend {
+			liquid_address,
+			payment_hash,
+			amount: Amount::from_sat(amount_sats as u64),
+			confirmed,
+			htlc_vtxos,
+			movement_id,
+		}))
 	} else {
 		Ok(None)
 	}

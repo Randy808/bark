@@ -1,3 +1,28 @@
+# RANDY'S README
+
+## ASP
+
+### BUILD ASP
+- `cargo build --bin captaind`
+- `./target/debug/captaind --version`
+
+### USE ALIAS FOR ASP
+- `alias captaind=./target/debug/captaind`
+
+### CONFIGURE ASP
+- `captaind create --config <path-to-your-toml-file>`
+- `captaind start --config <path-to-your-toml-file>`
+
+
+## BARK
+
+### TO BUILD BARK
+- `cd bark-cli`
+- `cargo build`
+- `alias bark=./target/debug/bark`
+- `./target/debug/bark create --regtest --ark http://127.0.0.1:3536/ --bitcoind http://127.0.0.1:18443 --bitcoind-user admin1 --bitcoind-pass 123`
+
+
 ![bark: Ark on bitcoin](assets/bark-header-white.jpg)
 
 <div align="center">

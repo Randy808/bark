@@ -36,6 +36,10 @@ pub const RPC_SERVICE_ARK_START_LIGHTNING_PAYMENT: &'static str = "start_lightni
 pub const RPC_SERVICE_ARK_FINISH_LIGHTNING_PAYMENT: &'static str = "finish_lightning_payment";
 pub const RPC_SERVICE_ARK_INITIATE_LIGHTNING_PAYMENT: &'static str = "initiate_lightning_payment";
 pub const RPC_SERVICE_ARK_CHECK_LIGHTNING_PAYMENT: &'static str = "check_lightning_payment";
+pub const RPC_SERVICE_ARK_REQUEST_LIQUID_PAY_HTLC_COSIGN: &'static str = "request_liquid_pay_htlc_cosign";
+pub const RPC_SERVICE_ARK_INITIATE_LIQUID_PAYMENT: &'static str = "initiate_liquid_payment";
+pub const RPC_SERVICE_ARK_CHECK_LIQUID_PAYMENT: &'static str = "check_liquid_payment";
+pub const RPC_SERVICE_ARK_REQUEST_LIQUID_PAY_HTLC_REVOCATION: &'static str = "request_liquid_pay_htlc_revocation";
 pub const RPC_SERVICE_ARK_REQUEST_LIGHTNING_PAY_HTLC_REVOCATION: &'static str = "request_lightning_pay_htlc_revocation";
 // TODO: Remove this once we hit 0.1.0-beta.6 or higher
 pub const RPC_SERVICE_ARK_REVOKE_LIGHTNING_PAYMENT: &'static str = "revoke_lightning_payment";

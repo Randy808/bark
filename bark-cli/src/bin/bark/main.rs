@@ -3,6 +3,7 @@
 mod dev;
 mod exit;
 mod lightning;
+mod liquid;
 mod onchain;
 mod round;
 mod util;
@@ -377,6 +378,11 @@ enum Command {
 	#[command(subcommand, visible_alias = "ln")]
 	Lightning(lightning::LightningCommand),
 
+
+	/// Perform any liquid-related command
+	#[command(subcommand, visible_alias = "lq")]
+	Liquid(liquid::LiquidCommand),
+
 	/// round-related commands
 	#[command(subcommand)]
 	Round(round::RoundCommand),
@@ -643,6 +649,9 @@ async fn inner_main(cli: Cli) -> anyhow::Result<()> {
 		},
 		Command::Lightning(cmd) => {
 			lightning::execute_lightning_command(cmd, &mut wallet).await?;
+		},
+		Command::Liquid(cmd) => {
+			liquid::execute_liquid_command(cmd, &mut wallet).await?;
 		},
 		Command::Round(cmd) => {
 			round::execute_round_command(cmd, &mut wallet).await?;

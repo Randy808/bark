@@ -103,6 +103,7 @@ impl PaymentHash {
 /// provide the preimage and refuse to revoke the HTLC. It will either
 /// force the Server to reveal the preimage (by spending using 2nd path)
 /// or give Alice her money back.
+//RANDY
 pub fn server_htlc_send_taproot(
 	payment_hash: PaymentHash,
 	server_pubkey: PublicKey,

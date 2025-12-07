@@ -56,6 +56,22 @@ pub struct LightningSend {
 	pub preimage: Option<Preimage>,
 }
 
+/// Persisted representation of an outgoing Liquid payment.
+///
+/// Similar to LightningSend but for Liquid network payments.
+/// Stores the liquid address, payment hash, and HTLC VTXOs.
+///
+/// Note: the record should be removed when the payment is completed or failed.
+#[derive(Debug, Clone)]
+pub struct LiquidSend {
+	pub liquid_address: String,
+	pub payment_hash: PaymentHash,
+	pub amount: Amount,
+	pub htlc_vtxos: Vec<WalletVtxo>,
+	pub movement_id: MovementId,
+	pub confirmed: bool,
+}
+
 /// Persisted representation of an incoming Lightning payment.
 ///
 /// Stores the invoice and related cryptographic material (e.g., payment hash and preimage)

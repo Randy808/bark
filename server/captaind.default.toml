@@ -206,8 +206,8 @@ integration_address = "127.0.0.1:3537"
 
 [postgres]
 host = "localhost"
-#user = "postgres"
-#password = "super_secure"
+user = "postgres"
+password = "super_secure"
 port = 5432
 name = "bark-server-db"
 # Maximum parallel connections to maintain in our connection pool
@@ -223,6 +223,15 @@ max_connections = 10
 url = "http://127.0.0.1:18443"
 # Path to the cookie file for RPC authentication
 #cookie = "/home/bitcoin/.bitcoin/.cookie"
-#rpc_user = "admin"
-#rpc_pass = "super_secure"
+rpc_user = "admin1"
+rpc_pass = "123"
+
+
+[elementsd]
+# Bitcoind JSON_RPC API endpoint
+url = "http://127.0.0.1:18884"
+# Path to the cookie file for RPC authentication
+#cookie = "/home/bitcoin/.bitcoin/.cookie"
+rpc_user = "admin1"
+rpc_pass = "123"
 

@@ -509,6 +509,7 @@ impl VtxoPolicy {
 			Self::Checkpoint(CheckpointVtxoPolicy {user_pubkey}) => {
 				checkpoint_taproot(*user_pubkey, server_pubkey, expiry_height)
 			}
+			//RANDY
 			Self::ServerHtlcSend(ServerHtlcSendVtxoPolicy { user_pubkey, payment_hash, htlc_expiry }) => {
 				server_htlc_send_taproot(*payment_hash, server_pubkey, *user_pubkey, exit_delta, *htlc_expiry)
 			},
@@ -559,6 +560,7 @@ impl VtxoPolicy {
 		self.taproot(server_pubkey, exit_delta, expiry_height).script_pubkey()
 	}
 
+	//RANDY
 	pub(crate) fn txout(
 		&self,
 		amount: Amount,

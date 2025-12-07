@@ -1,0 +1,27 @@
+I'd like to implement the ability to pay liquid addresses.
+
+On the client side:
+Please make a copy of src/lightning/pay.rs that works with Liquid.
+
+Most of the code can stay the same (we can use the same `ServerHtlcSend` policy), but our implementation of `check_lightning_payment` should be changed to accomodate this change. I think we can leave `process_lightning_send_server_preimage` and `pay_lightning_invoice` mostly the same since I'd like to make the fact we're paying a liquid address opaque to the database schema to minimize changes and complete a POC.  If you see other places that need to change, let me know.
+
+The variant of `pay_lightning_invoice` should call a different rpc for the server that's specific to liquid stuff. This is the reference to that code:
+```
+let res = srv.client.initiate_lightning_payment(req).await?.into_inner();
+debug!("Progress update: {}", res.progress_message);
+
+let preimage_opt = self.process_lightning_send_server_preimage(
+  res.payment_preimage, &payment,
+).await?;
+```
+
+Also, it's okay if we don't check the preimage here and just skip that part (so return after our liquid version of `initiate_lightning_payment`). We'll just have these liquid payments complete whenever the liquid equivalent of `check_lightning_payment` is called.
+
+
+See if we can confirm the payment by making a request through the EsploraClientExt (in `bitcoin-ext/src/esplora.rs`) for the liquid address that's suppsoed to hold the hash.
+
+On the server side:
+
+We can make an elements rpc client using ElementsRpcClient::new() (from https://crates.io/crates/elements-rpc).
+
+You can assume we have a funded default wallet we can use to send liquid bitcoin from. The address we'll have to construct ourselves to be the liquid equivalent of the htlc output (which should be mostly the same since the opcodes needed are all available on liquid). It would be best if the address used is unconfidential so we can check the amount that was sent was ok
