@@ -1,5 +1,8 @@
 # RANDY'S README
 
+## NIGIRI
+- Deploy nodes with Nigiri
+
 ## ASP
 
 ### BUILD ASP
@@ -10,17 +13,29 @@
 - `alias captaind=./target/debug/captaind`
 
 ### CONFIGURE ASP
-- `captaind create --config <path-to-your-toml-file>`
-- `captaind start --config <path-to-your-toml-file>`
+- `captaind create --config captaind.default.toml`
+- `captaind start --config captaind.default.toml`
 
 
 ## BARK
 
 ### TO BUILD BARK
-- `cd bark-cli`
+- `cd bark`
 - `cargo build`
+
+## USE ALIAS FOR CLIENT
 - `alias bark=./target/debug/bark`
+
+## RUN BARK
 - `./target/debug/bark create --regtest --ark http://127.0.0.1:3536/ --bitcoind http://127.0.0.1:18443 --bitcoind-user admin1 --bitcoind-pass 123`
+
+
+## SENDING TO LIQUID
+- `bark onchain address`
+- `bark board --all`
+- `bitcoin-cli -generate 6`
+- `bark balance` (make sure you have a balance)
+- `bark liquid pay el1qqtxcxzmhhsj58acmckm6x5s9xf0g9l30l00p2wnp8y4uzyz8pacrad9x2fyqudjv8u5agga8eq7er5leuhmpca7vu96tztn6q 1000sats`
 
 
 ![bark: Ark on bitcoin](assets/bark-header-white.jpg)
