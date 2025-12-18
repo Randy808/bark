@@ -54,6 +54,7 @@ pub fn unsigned_arkoor_tx(input: &Vtxo, outputs: &[TxOut]) -> Transaction {
 	}
 }
 
+//RANDY: Where OOR vtxos are constructed
 /// Inner utility method to construct the arkoor vtxos.
 fn build_arkoor_vtxos<T: Borrow<VtxoRequest>>(
 	input: &Vtxo,

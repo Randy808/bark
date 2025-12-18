@@ -227,15 +227,14 @@ impl Wallet {
 			input_ids.push(input.id());
 		}
 
-		let user_generated_preimage = Preimage::random();
 
-
-		let req = protos::LiquidPayHtlcCosignRequest {
+		let req: protos::LiquidPayHtlcCosignRequest = protos::LiquidPayHtlcCosignRequest {
 			liquid_address: liquid_address.clone(),
 			amount_sat: amount.to_sat(),
 			input_vtxo_ids: input_ids.iter().map(|v| v.to_bytes().to_vec()).collect(),
 			user_nonces: pubs.iter().map(|p| p.serialize().to_vec()).collect(),
 			user_pubkey: change_keypair.public_key().serialize().to_vec(),
+			payment_hash: payment_hash.to_string()
 		};
 
 		// Request cosignature from server
@@ -250,7 +249,7 @@ impl Wallet {
 		let pay_req = match policy {
 			VtxoPolicy::ServerHtlcSend(policy) => {
 				ensure!(policy.user_pubkey == change_keypair.public_key(), "user pubkey mismatch");
-				// ensure!(policy.payment_hash == payment_hash, "payment hash mismatch");
+				ensure!(policy.payment_hash == payment_hash, "payment hash mismatch");
 				VtxoRequest { amount: amount, policy: policy.into() }
 			},
 			_ => bail!("invalid policy returned from server"),
@@ -272,6 +271,8 @@ impl Wallet {
 			self.validate_vtxo(vtxo).await?;
 			effective_balance += vtxo.amount();
 		}
+
+		// RANDY: WHY DO THIS BEFORE initiate_liquid_payment?
 
 		let movement_id = self.movements.new_movement(
 			self.subsystem_ids[&BarkSubsystem::LiquidSend],

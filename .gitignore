@@ -18,3 +18,5 @@ testing/tmp-pg-data
 
 # macOS
 .DS_Store
+
+/wallet

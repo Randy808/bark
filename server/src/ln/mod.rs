@@ -89,6 +89,7 @@ impl Server {
 		//TODO(stevenroose) validate vtxo generally (based on input)
 		let invoice_payment_hash = invoice.payment_hash();
 
+		//RANDY: TODO: Is this needed? Can't we get the vtxos from the payment hash in the invoice?
 		let htlc_vtxos = self.db.get_vtxos_by_id(&htlc_vtxo_ids).await?;
 
 		let mut vtxos = vec![];

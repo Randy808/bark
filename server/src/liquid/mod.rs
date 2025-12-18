@@ -97,9 +97,9 @@ impl Server {
 			let htlc_policy = policy.as_server_htlc_send()
 				.context("VTXO is not a ServerHtlcSend policy")?;
 
-			// if htlc_policy.payment_hash != payment_hash {
-			// 	return badarg!("VTXO payment hash doesn't match");
-			// }
+			if htlc_policy.payment_hash != payment_hash {
+				return badarg!("VTXO payment hash doesn't match");
+			}
 		}
 
 		// Get the payment tracking structure

@@ -308,6 +308,7 @@ message LiquidPayHtlcCosignRequest {
 	repeated bytes input_vtxo_ids = 3;
 	repeated bytes user_nonces = 4;
 	bytes user_pubkey = 5;
+	string payment_hash = 6;
 }
 
 message LiquidPayHtlcCosignResponse {

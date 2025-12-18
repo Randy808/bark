@@ -189,6 +189,7 @@ impl<'a> ArkoorPackageBuilder<'a, VtxoRequest> {
 		self.arkoors.iter().map(|arkoor| {
 			let txouts = arkoor.txouts();
 			let tx = unsigned_arkoor_tx(&arkoor.input, &txouts);
+			//RANDY
 			build_arkoor_vtxos(&arkoor.input, &arkoor.outputs, &txouts, tx.compute_txid(), None) //TODO(stevenroose) signaature
 		}).collect::<Vec<Vec<_>>>()
 	}

@@ -286,7 +286,7 @@ impl Wallet {
 
 		let (change_keypair, _) = self.derive_store_next_keypair()?;
 
-		//RANDY
+		//RANDY: coin selection
 		let inputs = self.select_vtxos_to_cover(amount, None)
 			.context("Could not find enough suitable VTXOs to cover lightning payment")?;
 
@@ -303,6 +303,7 @@ impl Wallet {
 			input_ids.push(input.id());
 		}
 
+		// RANDY: TODO: Think about only sending the payment hash and not the whole invoice if we want to control when the sever actually initiates the send
 		let req = protos::LightningPayHtlcCosignRequest {
 			invoice: invoice.to_string(),
 			user_amount_sat: user_amount.map(|a| a.to_sat()),
@@ -312,7 +313,7 @@ impl Wallet {
 		};
 
 		// req pay
-		//RANDY
+		//RANDY: This sends our vtxos to htlc with server pubkey
 		let resp = srv.client.request_lightning_pay_htlc_cosign(req).await
 			.context("htlc request failed")?.into_inner();
 
@@ -324,7 +325,7 @@ impl Wallet {
 		let pay_req = match policy {
 			VtxoPolicy::ServerHtlcSend(policy) => {
 				ensure!(policy.user_pubkey == change_keypair.public_key(), "user pubkey mismatch");
-				// ensure!(policy.payment_hash == invoice.payment_hash(), "payment hash mismatch");
+				ensure!(policy.payment_hash == invoice.payment_hash(), "payment hash mismatch");
 				// TODO: ensure expiry is not too high? add new bark config to check against?
 				VtxoRequest { amount: amount, policy: policy.into() }
 			},
@@ -391,6 +392,7 @@ impl Wallet {
 			wait: true,
 		};
 
+		// RANDY: Tells the server to actually try redeeming the htlc assigned to it by paying the invoice
 		let res = srv.client.initiate_lightning_payment(req).await?.into_inner();
 		debug!("Progress update: {}", res.progress_message);
 

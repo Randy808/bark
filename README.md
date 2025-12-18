@@ -27,8 +27,8 @@
 - `alias bark=./target/debug/bark`
 
 ## RUN BARK
-- `./target/debug/bark create --regtest --ark http://127.0.0.1:3536/ --bitcoind http://127.0.0.1:18443 --bitcoind-user admin1 --bitcoind-pass 123`
-
+- `./target/debug/bark create --regtest --ark http://127.0.0.1:3535/ --bitcoind http://127.0.0.1:18443 --bitcoind-user admin1 --bitcoind-pass 123`
+- wallet will be created at ~/.bark or wherever `BARK_DATADIR` is set.
 
 ## SENDING TO LIQUID
 - `bark onchain address`

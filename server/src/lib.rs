@@ -687,6 +687,7 @@ impl Server {
 
 		match self.db.check_set_vtxo_oor_spent_package(&builder).await {
 			Ok(Some(dup)) => {
+				//RANDY: TODO: So confirm and mark it spent locally! (comment for the client but i put a reminder here)
 				badarg!("attempted to sign arkoor tx for already spent vtxo {}", dup)
 			},
 			Ok(None) => {

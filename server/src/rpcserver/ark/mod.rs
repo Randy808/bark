@@ -383,9 +383,7 @@ impl rpc::server::ArkService for Server {
 		let amount = Amount::from_sat(req.amount_sat);
 
 		// Create payment hash from liquid address
-		let payment_hash = PaymentHash::from(
-			bitcoin::hashes::sha256::Hash::hash(req.liquid_address.as_bytes())
-		);
+		let payment_hash = PaymentHash::from_str(&req.payment_hash).expect("Payment hash proposal failed");
 
 		let (sigs, policy) = self.cosign_liquid_pay_htlc(
 			input_ids,

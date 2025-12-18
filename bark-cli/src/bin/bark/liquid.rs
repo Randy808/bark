@@ -32,7 +32,8 @@ pub async fn execute_liquid_command(
 		LiquidCommand::Pay { address, amount } => {
 			// TODO: Change random preimage to something we are keeping track of so we can claim liquid payment and
 			// finish sending to our recipient
-			wallet.pay_liquid_address(address, amount.unwrap(), Preimage::random().compute_payment_hash()).await?;
+			let preimage = Preimage::random();
+			wallet.pay_liquid_address(address, amount.unwrap(), preimage.clone().compute_payment_hash()).await?;
 		}
 	}
 
